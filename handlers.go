@@ -7,19 +7,17 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 )
 
 
-
 func CreateJira(w http.ResponseWriter, r *http.Request) {
 	var violation Violation
-	var jira_account_configuration JiraAccountConf
-	configurationFile, err := os.Open("config/jira-account.json")
-	decoder :=json.NewDecoder(configurationFile)
-	err = decoder.Decode(&jira_account_configuration)
+	var jiraAccountConfiguration JiraAccountConf
+	var jiraIssueConfiguration JiraIssueConf
+	var jiraClient jira.Client
 
+	jiraAccountConfiguration = ReadJiraConfigurationFile("config/jira-account.json")
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 5048576))
 	if err != nil{
 		panic(err)
@@ -32,49 +30,55 @@ func CreateJira(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	}
-	fmt.Println(violation.WatchName)
-	v, err:=json.Marshal(violation)
-	if err != nil {
-		panic(err)
-	}
+	violation = ParseViolationJson(r)
 
-	tp := jira.BasicAuthTransport{
-		Username: strings.TrimSpace(jira_account_configuration.UserName),
-		Password: strings.TrimSpace(jira_account_configuration.Password),
-	}
-
-	client, _ := jira.NewClient(tp.Client(), jira_account_configuration.Connection_String)
-	fmt.Println(string(jira_account_configuration.Connection_String))
+	&jiraClient = InitJiraClient(jiraAccountConfiguration)
 	if err != nil {
 		fmt.Printf("\nerror: %v\n", err)
 		return
 	}
 
+	jiraIssueConfiguration = ReadJiraIssueFile ("config/jira-create-issue")
+
+
+
+
 	i := jira.Issue{
 		Fields: &jira.IssueFields{
 			Assignee: &jira.User{
-				Name: "shaibz",
+				Name: GetIssueAssignee(jiraIssueConfiguration),
 			},
 			Reporter: &jira.User{
-				Name: "shaibz",
+				Name: GetIssueReporter(jiraIssueConfiguration),
 			},
-			Description: violation.Issues[0].Type + " " + violation.Issues[0].Description + ", severity: " + violation.Issues[0].Severity,
+			Description: violation.Issues[0].Description,
 			Type: jira.IssueType{
-				Name: "Bug",
+				Name: GetIssueType(jiraIssueConfiguration),
 			},
 			Project: jira.Project{
-				Key: "WEB",
+				Key: GetIssueProject(jiraIssueConfiguration),
 			},
 			Summary: violation.Issues[0].Type + " " + violation.Issues[0].Description + ", severity: " + violation.Issues[0].Severity,
 		},
 
 	}
 
-	issue, _, err := client.Issue.Create(&i)
+	issue, _, err := jiraClient.Issue.Create(&i)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("%s: %+v\n", issue.Key)
 
-	fmt.Println(string(v))
 }
+
+func InitJiraClient(jiraAccountConfiguration JiraAccountConf) *jira.Client {
+
+	tp := jira.BasicAuthTransport{
+		Username: strings.TrimSpace(jiraAccountConfiguration.UserName),
+		Password: strings.TrimSpace(jiraAccountConfiguration.Password),
+	}
+
+	client, _ := jira.NewClient(tp.Client(), jiraAccountConfiguration.ConnectionString)
+	return client
+}
+
