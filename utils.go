@@ -38,6 +38,10 @@ func ReadJiraConfigurationFile (JiraConfFilePath string) JiraAccountConf {
 
 func ReadJiraIssueFile (JiraIssueFilePath string) JiraIssueConf {
 	var jiraIssueConf JiraIssueConf
+
+	fmt.Println("Opening jira Issue configuration file")
+
+
 	configurationFile, err := os.Open(JiraIssueFilePath)
 	if err != nil{
 		fmt.Println(err)
@@ -46,6 +50,9 @@ func ReadJiraIssueFile (JiraIssueFilePath string) JiraIssueConf {
 	decoder :=json.NewDecoder(configurationFile)
 	err = decoder.Decode(&jiraIssueConf)
 	defer configurationFile.Close()
+
+	fmt.Println("Jira Issue configuration file successfully loaded")
+
 
 	return jiraIssueConf
 }

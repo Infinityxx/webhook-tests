@@ -33,14 +33,13 @@ func CreateJira(w http.ResponseWriter, r *http.Request) {
 	}
 	violation = ParseViolationJson(r)
 
-	jiraClient = *InitJiraClient(jiraAccountConfiguration)
+	jiraClient = *(InitJiraClient(jiraAccountConfiguration))
 	if err != nil {
 		fmt.Printf("\nerror: %v\n", err)
 		return
 	}
 
-	jiraIssueConfiguration = ReadJiraIssueFile ("config/jira-create-issue")
-
+	jiraIssueConfiguration = ReadJiraIssueFile ("config/jira-create-issue.json")
 
 
 
@@ -74,12 +73,16 @@ func CreateJira(w http.ResponseWriter, r *http.Request) {
 
 func InitJiraClient(jiraAccountConfiguration JiraAccountConf) *jira.Client {
 
+	fmt.Println("Opening jira account configuration file")
 	tp := jira.BasicAuthTransport{
 		Username: strings.TrimSpace(jiraAccountConfiguration.UserName),
 		Password: strings.TrimSpace(jiraAccountConfiguration.Password),
 	}
 
 	client, _ := jira.NewClient(tp.Client(), jiraAccountConfiguration.ConnectionString)
+
+	fmt.Println("jira account configuration file successfully loaded")
+
 	return client
 }
 
