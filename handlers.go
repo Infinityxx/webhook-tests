@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+
 )
 
 
@@ -32,7 +33,7 @@ func CreateJira(w http.ResponseWriter, r *http.Request) {
 	}
 	violation = ParseViolationJson(r)
 
-	&jiraClient = InitJiraClient(jiraAccountConfiguration)
+	jiraClient = *InitJiraClient(jiraAccountConfiguration)
 	if err != nil {
 		fmt.Printf("\nerror: %v\n", err)
 		return
