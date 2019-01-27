@@ -38,12 +38,12 @@ func CreateJira(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Opening jira account configuration file")
 
 
-	tp := jira.BasicAuthTransport{
+	/*tp := jira.BasicAuthTransport{
 		Username: strings.TrimSpace(jiraAccountConfiguration.UserName),
 		Password: strings.TrimSpace(jiraAccountConfiguration.Password),
 	}
-
-	client, err := jira.NewClient(tp.Client(), strings.TrimSpace(jiraAccountConfiguration.ConnectionString))
+*/
+	client, err := jira.NewClient(InitJiraClientAuthorization(jiraAccountConfiguration).Client(), strings.TrimSpace(jiraAccountConfiguration.ConnectionString))
 	if err != nil {
 		fmt.Printf("\nerror: %v\n", err)
 		return
