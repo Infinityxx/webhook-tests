@@ -1,5 +1,5 @@
 {
-  "Connection_String": "http://localhost:8082/createjira",
+  "ConnectionString": "http://localhost:8082/createjira",
   "UserName" : "webhook",
   "Password" : "password"
 }

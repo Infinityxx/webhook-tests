@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
 )
 
 
@@ -16,9 +15,12 @@ func CreateJira(w http.ResponseWriter, r *http.Request) {
 	var violation Violation
 	var jiraAccountConfiguration JiraAccountConf
 	var jiraIssueConfiguration JiraIssueConf
-	var jiraClient jira.Client
 
 	jiraAccountConfiguration = ReadJiraConfigurationFile("config/jira-account.json")
+	jiraIssueConfiguration = ReadJiraIssueFile ("config/jira-create-issue.json")
+
+
+
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 5048576))
 	if err != nil{
 		panic(err)
@@ -31,39 +33,44 @@ func CreateJira(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	}
-	violation = ParseViolationJson(r)
 
-	jiraClient = *(InitJiraClient(jiraAccountConfiguration))
+	fmt.Println("Opening jira account configuration file")
+
+
+	/*tp := jira.BasicAuthTransport{
+		Username: strings.TrimSpace(jiraAccountConfiguration.UserName),
+		Password: strings.TrimSpace(jiraAccountConfiguration.Password),
+	}
+*/
+	client, err := jira.NewClient(InitJiraClientAuthorization(jiraAccountConfiguration).Client(), strings.TrimSpace(jiraAccountConfiguration.ConnectionString))
 	if err != nil {
 		fmt.Printf("\nerror: %v\n", err)
 		return
 	}
 
-	jiraIssueConfiguration = ReadJiraIssueFile ("config/jira-create-issue.json")
-
-
+	//jiraIssueConfiguration = ReadJiraIssueFile ("config/jira-create-issue.json")
 
 	i := jira.Issue{
 		Fields: &jira.IssueFields{
 			Assignee: &jira.User{
-				Name: GetIssueAssignee(jiraIssueConfiguration),
+				Name: jiraIssueConfiguration.Assignee,
 			},
 			Reporter: &jira.User{
-				Name: GetIssueReporter(jiraIssueConfiguration),
+				Name: jiraIssueConfiguration.Reporter,
 			},
-			Description: violation.Issues[0].Description,
+			Description: "some description",
 			Type: jira.IssueType{
-				Name: GetIssueType(jiraIssueConfiguration),
+				Name: jiraIssueConfiguration.IssueType,
 			},
 			Project: jira.Project{
-				Key: GetIssueProject(jiraIssueConfiguration),
+				Key: jiraIssueConfiguration.Project,
 			},
-			Summary: violation.Issues[0].Type + " " + violation.Issues[0].Description + ", severity: " + violation.Issues[0].Severity,
+			Summary: "dsadasdas",
 		},
 
 	}
 
-	issue, _, err := jiraClient.Issue.Create(&i)
+	issue, _, err := client.Issue.Create(&i)
 	if err != nil {
 		panic(err)
 	}
@@ -71,7 +78,7 @@ func CreateJira(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func InitJiraClient(jiraAccountConfiguration JiraAccountConf) *jira.Client {
+func InitJiraClientAuthorization(jiraAccountConfiguration JiraAccountConf) *jira.BasicAuthTransport {
 
 	fmt.Println("Opening jira account configuration file")
 	tp := jira.BasicAuthTransport{
@@ -79,10 +86,6 @@ func InitJiraClient(jiraAccountConfiguration JiraAccountConf) *jira.Client {
 		Password: strings.TrimSpace(jiraAccountConfiguration.Password),
 	}
 
-	client, _ := jira.NewClient(tp.Client(), jiraAccountConfiguration.ConnectionString)
-
-	fmt.Println("jira account configuration file successfully loaded")
-
-	return client
+	return &tp
 }
 

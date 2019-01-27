@@ -9,9 +9,9 @@ import (
 	"os"
 )
 
-func ParseViolationJson (r *http.Request) Violation {
-	var violation Violation
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 5048576))
+func ParseViolationJson (r *http.Request) *Violation {
+	var violation *Violation
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 9048576))
 	if err != nil{
 		panic(err)
 	}
